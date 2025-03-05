@@ -34,15 +34,17 @@ def find_a_neighbour(data, current_solution, config_columns, performance_column,
 
         matched_row = data.loc[(data[config_columns] == pd.Series(temp, index=config_columns)).all(axis=1)]
 
-        if not matched_row.empty:
-            if not temp in past_solutions:
+        if not temp in past_solutions:
+            if not matched_row.empty:
                 performance = matched_row[performance_column].iloc[0]
-                new_solution = temp[:]
+
             else:
-                attempts += 1
-        else:
-            performance = worst_value
+                performance = worst_value
+
             new_solution = temp[:]
+
+        else:
+            attempts += 1
 
         if attempts == max_attempts:
             matched_row = data.loc[(data[config_columns] == pd.Series(current_solution, index=config_columns)).all(axis=1)]
@@ -70,7 +72,7 @@ def random_solution_generator(data, config_columns, performance_column, worst_va
 
     return sampled_config, performance
 
-def simulated_annealing(file_path, budget, temperature, output_file, cooling_rate):
+def improved_simulated_annealing(file_path, budget, temperature, output_file, cooling_rate):
     # Load the dataset
     data = pd.read_csv(file_path)
     past_checks = []
@@ -169,30 +171,50 @@ def simulated_annealing(file_path, budget, temperature, output_file, cooling_rat
     return [int(x) for x in best_solution], best_performance
 
 
-
 # Main function to test on multiple datasets
 def main():
     datasets_folder = "datasets"
     output_folder = "search_results"
     os.makedirs(output_folder, exist_ok=True)
     budget = 100
+    runs = 1
 
     results = {}
     for file_name in os.listdir(datasets_folder):
         if file_name.endswith(".csv"):
-            file_path = os.path.join(datasets_folder, file_name)
-            output_file = os.path.join(output_folder, f"{file_name.split('.')[0]}_search_results.csv")
-            best_solution, best_performance = simulated_annealing(file_path, budget, 1, output_file, 0.963)
-            results[file_name] = {
-                "Best Solution": best_solution,
-                "Best Performance": best_performance
-            }
+            if runs == 1:
+                file_path = os.path.join(datasets_folder, file_name)
+                output_file = os.path.join(output_folder, f"{file_name.split('.')[0]}_search_results.csv")
+                best_solution, best_performance = improved_simulated_annealing(file_path, budget, 1, output_file, 0.963)
+                results[file_name] = {
+                    "Best Solution": best_solution,
+                    "Best Performance": best_performance
+                }
+            else:
+                file_path = os.path.join(datasets_folder, file_name)
+                output_file = os.path.join(output_folder, f"{file_name.split('.')[0]}_search_results.csv")
+                system_name = file_name.split('.')[0]
+                best_performances = []
+                for run in range(1, runs + 1):
+                    best_solution, best_performance = improved_simulated_annealing(file_path, budget, 1, output_file, 0.963)
+                    best_performances.append(best_performance)
+                    print(f"Run {run} for {system_name} completed. Best Performance: {best_performance}")
+                results[system_name] = best_performances
 
-    # Print the results
-    for system, result in results.items():
-        print(f"System: {system}")
-        print(f"  Best Solution:    [{', '.join(map(str, result['Best Solution']))}]")
-        print(f"  Best Performance: {result['Best Performance']}")
+    if runs == 1:
+        # Print the results
+        for system, result in results.items():
+            print(f"System: {system}")
+            print(f"  Best Solution:    [{', '.join(map(str, result['Best Solution']))}]")
+            print(f"  Best Performance: {result['Best Performance']}")
+    else:
+
+        results_df = pd.DataFrame(results)
+        results_csv_path = os.path.join(output_folder, "best_performances.csv")
+
+        # Save to a single CSV file
+        results_df.to_csv(results_csv_path, index_label="Run")
+        print(f"CSV file with best performances over {runs} runs was returned to {results_csv_path}")
 
 if __name__ == "__main__":
     main()

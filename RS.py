@@ -78,23 +78,44 @@ def main():
     output_folder = "search_results"
     os.makedirs(output_folder, exist_ok=True)
     budget = 100
+    runs = 1
 
     results = {}
     for file_name in os.listdir(datasets_folder):
         if file_name.endswith(".csv"):
-            file_path = os.path.join(datasets_folder, file_name)
-            output_file = os.path.join(output_folder, f"{file_name.split('.')[0]}_search_results.csv")
-            best_solution, best_performance = random_search(file_path, budget, output_file)
-            results[file_name] = {
-                "Best Solution": best_solution,
-                "Best Performance": best_performance
-            }
+            if runs == 1:
+                file_path = os.path.join(datasets_folder, file_name)
+                output_file = os.path.join(output_folder, f"{file_name.split('.')[0]}_search_results.csv")
+                best_solution, best_performance = random_search(file_path, budget, output_file)
+                results[file_name] = {
+                    "Best Solution": best_solution,
+                    "Best Performance": best_performance
+                }
+            else:
+                file_path = os.path.join(datasets_folder, file_name)
+                output_file = os.path.join(output_folder, f"{file_name.split('.')[0]}_search_results.csv")
+                system_name = file_name.split('.')[0]
+                best_performances = []
+                for run in range(1, runs + 1):
+                    best_solution, best_performance = random_search(file_path, budget, output_file)
+                    best_performances.append(best_performance)
+                    print(f"Run {run} for {system_name} completed. Best Performance: {best_performance}")
+                results[system_name] = best_performances
 
-    # Print the results
-    for system, result in results.items():
-        print(f"System: {system}")
-        print(f"  Best Solution:    [{', '.join(map(str, result['Best Solution']))}]")
-        print(f"  Best Performance: {result['Best Performance']}")
+    if runs == 1:
+        # Print the results
+        for system, result in results.items():
+            print(f"System: {system}")
+            print(f"  Best Solution:    [{', '.join(map(str, result['Best Solution']))}]")
+            print(f"  Best Performance: {result['Best Performance']}")
+    else:
+
+        results_df = pd.DataFrame(results)
+        results_csv_path = os.path.join(output_folder, "best_performances.csv")
+
+        # Save to a single CSV file
+        results_df.to_csv(results_csv_path, index_label="Run")
+        print(f"CSV file with best performances over {runs} runs was returned to {results_csv_path}")
 
 if __name__ == "__main__":
     main()
