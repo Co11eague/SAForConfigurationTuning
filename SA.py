@@ -120,6 +120,8 @@ def main():
     output_folder = "search_results"
     os.makedirs(output_folder, exist_ok=True)
     budget = 100
+    temperature = 1
+    cooling_rate = 0.963
     runs = 1
 
     results = {}
@@ -128,7 +130,7 @@ def main():
             if runs == 1:
                 file_path = os.path.join(datasets_folder, file_name)
                 output_file = os.path.join(output_folder, f"{file_name.split('.')[0]}_search_results.csv")
-                best_solution, best_performance = simulated_annealing(file_path, budget, 1, output_file, 0.963)
+                best_solution, best_performance = simulated_annealing(file_path, budget, temperature, output_file, cooling_rate)
                 results[file_name] = {
                     "Best Solution": best_solution,
                     "Best Performance": best_performance
@@ -139,7 +141,7 @@ def main():
                 system_name = file_name.split('.')[0]
                 best_performances = []
                 for run in range(1, runs + 1):
-                    best_solution, best_performance = simulated_annealing(file_path, budget, 1, output_file, 0.963)
+                    best_solution, best_performance = simulated_annealing(file_path, budget, temperature, output_file, cooling_rate)
                     best_performances.append(best_performance)
                     print(f"Run {run} for {system_name} completed. Best Performance: {best_performance}")
                 results[system_name] = best_performances

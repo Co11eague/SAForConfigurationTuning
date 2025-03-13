@@ -72,7 +72,7 @@ def random_solution_generator(data, config_columns, performance_column, worst_va
 
     return sampled_config, performance
 
-def improved_simulated_annealing(file_path, budget, temperature, output_file, cooling_rate):
+def improved_simulated_annealing(file_path, budget, temperature, output_file, cooling_rate, initialisation_ratio):
     # Load the dataset
     data = pd.read_csv(file_path)
     past_checks = []
@@ -96,7 +96,7 @@ def improved_simulated_annealing(file_path, budget, temperature, output_file, co
     else:
         worst_value = data[performance_column].max() * 2  # For minssing configrations
 
-    random_budget = int(budget * 0.3)
+    random_budget = int(budget * initialisation_ratio)
     budget = budget - random_budget
     initial_solutions = []
     initial_performances = []
@@ -178,6 +178,9 @@ def main():
     os.makedirs(output_folder, exist_ok=True)
     budget = 100
     runs = 1
+    temperature = 1
+    cooling_rate = 0.963
+    initialisation_ratio = 0.3
 
     results = {}
     for file_name in os.listdir(datasets_folder):
@@ -185,7 +188,7 @@ def main():
             if runs == 1:
                 file_path = os.path.join(datasets_folder, file_name)
                 output_file = os.path.join(output_folder, f"{file_name.split('.')[0]}_search_results.csv")
-                best_solution, best_performance = improved_simulated_annealing(file_path, budget, 1, output_file, 0.963)
+                best_solution, best_performance = improved_simulated_annealing(file_path, budget, temperature, output_file, cooling_rate, initialisation_ratio)
                 results[file_name] = {
                     "Best Solution": best_solution,
                     "Best Performance": best_performance
@@ -196,7 +199,7 @@ def main():
                 system_name = file_name.split('.')[0]
                 best_performances = []
                 for run in range(1, runs + 1):
-                    best_solution, best_performance = improved_simulated_annealing(file_path, budget, 1, output_file, 0.963)
+                    best_solution, best_performance = improved_simulated_annealing(file_path, budget, temperature, output_file, cooling_rate, initialisation_ratio)
                     best_performances.append(best_performance)
                     print(f"Run {run} for {system_name} completed. Best Performance: {best_performance}")
                 results[system_name] = best_performances
